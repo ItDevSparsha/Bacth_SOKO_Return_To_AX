@@ -29,6 +29,8 @@ namespace Bacth_SOKO_Return_To_AX
             string svcCredentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(username + ":" + password));
             try
             {
+                String conBI = ConfigurationManager.AppSettings["conBI"];
+
                 var client = new HttpClient();
                 var date = DateTime.Now;
                 var day = date.Day.ToString();
@@ -47,9 +49,15 @@ namespace Bacth_SOKO_Return_To_AX
                     Console.WriteLine("Today is " + fix_day.Day.ToString() + '-' + fix_day.Month.ToString() + '-' + fix_day.Year.ToString());
                     var _date = fix_day.Year.ToString() + '-' + fix_day.Month.ToString() + '-' + fix_day.Day.ToString();
                     Console.WriteLine("กำลังทำของวันที่ " + _date);
-                    var _url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date ;
+                    //เส้นจริง
+                    var _url = "https://verite.sokochan.com/api/1.0/returns?received_date=" + _date ;
+                    //เส้นเทส
+                    //var _url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date ;
 
                     //เปิดตัวนี้ถ้าเลือกวันจุดที่ 1 (มี 2 จุด)
+                    //เส้นจริง
+                    //var _url = "https://verite.sokochan.com/api/1.0/returns?received_date=2024-12-24";
+                    //เส้นเทส
                     //var _url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=2024-12-03";
 
                     var request = new HttpRequestMessage(HttpMethod.Get, _url);
@@ -84,12 +92,21 @@ namespace Bacth_SOKO_Return_To_AX
                     }
                     for (var offset = 0; offset <= round; offset += 100) //เปิดวน offset
                     {
-                        var new_url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date ;
-                        
+                        //เส้นจริง
+                        var new_url = "https://verite.sokochan.com/api/1.0/returns?received_date=" + _date ;
+                        //เส้นเทส
+                        //var new_url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date ;
+
                         //ทำเผื่อเรื่อง offset ตอนนี้เส้น api ยังไม่ทำให้
-                        //var new_url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date + "&offset=" + offset;
+                        //เส้นจริง
+                        //var new_url = "https://verite.sokochan.com/api/1.0/returns?received_date=" + _date+ "&offset=" + offset ;
+                        //เส้นเทส
+                        //var new_url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=" + _date + "&offset=" + offset ;
 
                         //เปิดตัวนี้ถ้าเลือกวันจุดที่ 2
+                        //เส้นจริง
+                        //var new_url = "https://verite.sokochan.com/api/1.0/returns?received_date=2024-12-24";
+                        //เส้นเทส
                         //var new_url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns?received_date=2024-12-03";
 
                         var new_request = new HttpRequestMessage(HttpMethod.Get, new_url);
@@ -130,7 +147,7 @@ namespace Bacth_SOKO_Return_To_AX
 
                                 /*Connect to Base*/
                                 Console.WriteLine();
-                                String conBI = ConfigurationManager.AppSettings["conBI"];
+                                //String conBI = ConfigurationManager.AppSettings["conBI"];
 
                                 //หา order_number และ return_id
                                 String SQL_return = "SELECT * FROM T_ORDER_MARKETPLACE WHERE ORDER_NUMBER = '" + order.order_number + "' AND RETURN_ID = N'" + order.return_id  + "'";
@@ -143,9 +160,36 @@ namespace Bacth_SOKO_Return_To_AX
                                 order_number = QueryDT(conBI, SQL);
 
                                 //เก็บข้อมูลที่เป็น Header 
-                                String SQL_Header = "SELECT * FROM T_ORDER_MARKETPLACE WHERE ORDER_STATUS <> N'RET' AND ORDER_NUMBER = '" + order.order_number + "'";
+                                String SQL_Header = "SELECT * FROM T_ORDER_MARKETPLACE WHERE ORDER_STATUS NOT IN (N'RET') AND ORDER_NUMBER = '" + order.order_number + "'";
                                 DataTable order_number_header = new DataTable();
                                 order_number_header = QueryDT(conBI, SQL_Header);
+
+                                //เก็บค่า INTERFACE_STATUS && ORDER_STATUS 
+                                String ORDER_STATUS_In = "RET";
+                                String INTERFACE_STATUS_In = "WAI";
+                                String ORDER_STATUS_Up = "RET";
+
+                                if ((order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "DRA" || order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "WAI")
+                                  && (order_number.Rows[0]["ORDER_STATUS"].ToString() == "SHI"|| order_number.Rows[0]["ORDER_STATUS"].ToString() == "CAN"))
+                                {
+                                    ORDER_STATUS_In     = "CAN";
+                                    INTERFACE_STATUS_In = "WAI";
+                                    ORDER_STATUS_Up     = "CAN";
+                                }
+                                else if (order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "COM"
+                                      && order_number.Rows[0]["ORDER_STATUS"].ToString() == "SHI")
+                                {
+                                    ORDER_STATUS_In     = "RET";
+                                    INTERFACE_STATUS_In = "WAI";
+                                    ORDER_STATUS_Up     = "SHI";
+                                }
+                                else if (order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "INC"
+                                      && order_number.Rows[0]["ORDER_STATUS"].ToString() == "SHI")
+                                {
+                                    ORDER_STATUS_In     = "RET";
+                                    INTERFACE_STATUS_In = "DRA";
+                                    ORDER_STATUS_Up     = "SHI";
+                                }
 
                                 //เก็บข้อมูลที่เป็น REASON_CODE
                                 String SQL_REASON_CODE = "SELECT * FROM M_CHANNEL_CONFIG WHERE CON_CODE_2 = N'REASON_CODE'";
@@ -172,6 +216,8 @@ namespace Bacth_SOKO_Return_To_AX
                                         warehouse_code_name = row["CON_VALUE"].ToString();
                                     }
                                 }
+                                //เก็บ error 
+                                var error = "0";
                                 //String or = order_number_header.Rows[0]["ORDER_NUMBER"].ToString();
                                 //String da = jsonObj_getorderreturn.detail_order.received_date; 
                                 //if ให้ไปหาในเบสก่อน ถ้ามีค่อยยิงเส้น api
@@ -179,9 +225,13 @@ namespace Bacth_SOKO_Return_To_AX
                                 {
                                     Console.WriteLine("มี order_number ใน base");
                                     var return_id = order.return_id.ToString();
-                                    var url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns/" + return_id;
+                                    //เส้นจริง
+                                    var url = "https://verite.sokochan.com/api/1.0/returns/" + return_id;
+                                    //เส้นเทส
+                                    //var url = "https://dev99.sokojung.com/uat-verite/api/1.0/returns/" + return_id;
                                     //ใช้ในกรณีเลือก return_id
-                                    //var url = "https://verite.sokochan.com/api/1.0/orders/2409-002-00925";
+                                    //var url = "https://verite.sokochan.com/api/1.0/returns/113";
+
                                     var request_getorderreturn = new HttpRequestMessage(HttpMethod.Get, url);
                                     request_getorderreturn.Headers.Add("Authorization", "Basic " + svcCredentials);
                                     var content_getorder = new StringContent("", null, "text/plain");
@@ -247,8 +297,9 @@ namespace Bacth_SOKO_Return_To_AX
                                         insertSQL.Append("VALUES( ");
                                         insertSQL.AppendFormat("N'{0}', ", uid_market);
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["ORDER_NUMBER"].ToString());
-                                        insertSQL.AppendFormat("N'{0}', ", jsonObj_getorderreturn.detail_order.received_date);
-                                        insertSQL.AppendFormat("N'RET', ");
+                                        insertSQL.AppendFormat("'{0}' , ", jsonObj_getorderreturn.detail_order.received_date);
+                                        //insertSQL.AppendFormat("N'RET', ");
+                                        insertSQL.AppendFormat("N'{0}', ", ORDER_STATUS_In);
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_ACCOUNT"].ToString());
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_MOBILE"].ToString());
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_PHONE"].ToString());
@@ -259,7 +310,8 @@ namespace Bacth_SOKO_Return_To_AX
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["DELIVERY_POSTAL_CODE"].ToString());
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CHANNEL_NAME"].ToString());
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["COMP_CODE"].ToString());
-                                        insertSQL.AppendFormat("'{0}', ", order_number_header.Rows[0]["REQUESTED_SHIP_DATE"].ToString());
+                                        //insertSQL.AppendFormat("'{0}' , ", order_number_header.Rows[0]["REQUESTED_SHIP_DATE"].ToString());
+                                        insertSQL.AppendFormat("'{0}' , ", jsonObj_getorderreturn.detail_order.received_date);
                                         insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["TERM_OF_PAYMENT"].ToString());
                                         insertSQL.AppendFormat("N'{0}', ", warehouse_code_name);
                                         insertSQL.AppendFormat("NULL, ");
@@ -267,7 +319,8 @@ namespace Bacth_SOKO_Return_To_AX
                                         insertSQL.AppendFormat("N'SOKO', ");
                                         insertSQL.AppendFormat("NULL, ");
                                         insertSQL.AppendFormat("NULL, ");
-                                        insertSQL.AppendFormat("N'WAI', ");
+                                        //insertSQL.AppendFormat("N'WAI', ");
+                                        insertSQL.AppendFormat("N'{0}', ", INTERFACE_STATUS_In);
                                         insertSQL.AppendFormat("NULL, ");
                                         insertSQL.AppendFormat("NULL, ");
                                         insertSQL.AppendFormat("NULL, ");
@@ -290,10 +343,29 @@ namespace Bacth_SOKO_Return_To_AX
                                         insertSQL.Append(") ");
                                         //ปิดส่งเบสก่อน
                                         NonQuery(conBI, insertSQL.ToString());
-
+                                        //update saleorder
+                                        try
+                                        {
+                                            var uid_Up = order_number_header.Rows[0]["UID"].ToString();
+                                            string _Update = $@"UPDATE T_ORDER_MARKETPLACE
+                                                               SET ORDER_STATUS  = N'{ORDER_STATUS_Up}'
+                                                               WHERE  UID = N'{uid_Up}'
+                                                                ";
+                                            DataTable queryUp1 = new DataTable();
+                                            queryUp1 = QueryDT(conBI, _Update);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            error = "1";
+                                            throw new ArgumentException(ex.Message);
+                                        }
                                         //วนไอเทม
                                         foreach (var item in jsonObj_getorderreturn.detail_item)
                                         {
+                                            if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                            {
+                                                item.item_sku = item.item_sku.Replace("GWP", "");
+                                            }
                                             String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
                                             DataTable item_detail = new DataTable();
                                             item_detail = QueryDT(conBI, SQL_DETAIL);
@@ -454,8 +526,9 @@ namespace Bacth_SOKO_Return_To_AX
                                                 insertSQL.Append("VALUES( ");
                                                 insertSQL.AppendFormat("N'{0}', ", uid_market);
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["ORDER_NUMBER"].ToString());
-                                                insertSQL.AppendFormat("N'{0}', ", jsonObj_getorderreturn.detail_order.received_date);
-                                                insertSQL.AppendFormat("N'RET', ");
+                                                insertSQL.AppendFormat("'{0}' , ", jsonObj_getorderreturn.detail_order.received_date);
+                                                //insertSQL.AppendFormat("N'RET', ");
+                                                insertSQL.AppendFormat("N'{0}', ", ORDER_STATUS_In);
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_ACCOUNT"].ToString());
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_MOBILE"].ToString());
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CUSTOMER_PHONE"].ToString());
@@ -466,7 +539,8 @@ namespace Bacth_SOKO_Return_To_AX
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["DELIVERY_POSTAL_CODE"].ToString());
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["CHANNEL_NAME"].ToString());
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["COMP_CODE"].ToString());
-                                                insertSQL.AppendFormat("'{0}', ", order_number_header.Rows[0]["REQUESTED_SHIP_DATE"].ToString());
+                                                //insertSQL.AppendFormat("'{0}' , ", order_number_header.Rows[0]["REQUESTED_SHIP_DATE"].ToString());
+                                                insertSQL.AppendFormat("'{0}' , ", jsonObj_getorderreturn.detail_order.received_date);
                                                 insertSQL.AppendFormat("N'{0}', ", order_number_header.Rows[0]["TERM_OF_PAYMENT"].ToString());
                                                 insertSQL.AppendFormat("N'{0}', ", warehouse_code_name);
                                                 insertSQL.AppendFormat("NULL, ");
@@ -474,7 +548,8 @@ namespace Bacth_SOKO_Return_To_AX
                                                 insertSQL.AppendFormat("N'SOKO', ");
                                                 insertSQL.AppendFormat("NULL, ");
                                                 insertSQL.AppendFormat("NULL, ");
-                                                insertSQL.AppendFormat("N'WAI', ");
+                                                //insertSQL.AppendFormat("N'WAI', ");
+                                                insertSQL.AppendFormat("N'{0}', ", INTERFACE_STATUS_In);
                                                 insertSQL.AppendFormat("NULL, ");
                                                 insertSQL.AppendFormat("NULL, ");
                                                 insertSQL.AppendFormat("NULL, ");
@@ -497,10 +572,29 @@ namespace Bacth_SOKO_Return_To_AX
                                                 insertSQL.Append(") ");
                                                 //ปิดส่งเบสก่อน
                                                 NonQuery(conBI, insertSQL.ToString());
-
+                                                //update saleorder
+                                                try
+                                                {
+                                                    var uid_Up = order_number_header.Rows[0]["UID"].ToString();
+                                                    string _Update = $@"UPDATE T_ORDER_MARKETPLACE
+                                                               SET ORDER_STATUS  = N'{ORDER_STATUS_Up}'
+                                                               WHERE  UID = N'{uid_Up}'
+                                                                ";
+                                                    DataTable queryUp1 = new DataTable();
+                                                    queryUp1 = QueryDT(conBI, _Update);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    error = "2";
+                                                    throw new ArgumentException(ex.Message);
+                                                }
                                                 //วนไอเทม
                                                 foreach (var item in jsonObj_getorderreturn.detail_item)
                                                 {
+                                                    if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                                    {
+                                                        item.item_sku = item.item_sku.Replace("GWP", "");
+                                                    }
                                                     String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
                                                     DataTable item_detail = new DataTable();
                                                     item_detail = QueryDT(conBI, SQL_DETAIL);
@@ -611,6 +705,43 @@ namespace Bacth_SOKO_Return_To_AX
                         }//ปิดวนออเดอร์
                     }//ปิดวน offset
                 }//ปิดวนวัน
+
+                //เช็คเคส INC ที่ยังไม่ Update
+                Console.WriteLine("start check INC not yet update");
+                //หา order_number และ return_id
+                String SQL_Check = "SELECT *  FROM T_ORDER_MARKETPLACE WHERE INTERFACE_STATUS = N'COM'   AND UID IN ( " +
+                                    "  SELECT UID_MARKETPLACE  FROM T_ORDER_MARKETPLACE " +
+                                    "  WHERE ORDER_STATUS = N'RET' " +
+                                    "  AND INTERFACE_STATUS = N'DRA' " +
+                                    "  AND (AX_INVOICE_NUMBER IS NULL OR AX_INVOICE_NUMBER = '' )) ";
+                DataTable recheck_order_number_INC = new DataTable();
+                recheck_order_number_INC = QueryDT(conBI, SQL_Check);
+                if (recheck_order_number_INC.Rows.Count > 0)
+                {
+                    foreach (DataRow data_row in recheck_order_number_INC.Rows)
+                    {
+                        var AX_SO_NUMBER = data_row["AX_SO_NUMBER"].ToString();
+                        var AX_INVOICE_NUMBER = data_row["AX_INVOICE_NUMBER"].ToString();
+                        var AX_PICKING_NUMBER = data_row["AX_PICKING_NUMBER"].ToString();
+                        var AX_PACKING_NUMBER = data_row["AX_PACKING_NUMBER"].ToString();
+                        var UID_MARKETPLACE = data_row["UID"].ToString();
+                        string INC_Update = $@"UPDATE T_ORDER_MARKETPLACE
+                                                               SET  REF_AX_SO_NUMBER  = '{AX_SO_NUMBER}',
+                                                               REF_AX_INVOICE_NUMBER  = '{AX_INVOICE_NUMBER}',
+                                                               REF_AX_PICKING_NUMBER  = '{AX_PICKING_NUMBER}',
+                                                               REF_AX_PACKING_NUMBER  = '{AX_PACKING_NUMBER}',
+                                                               INTERFACE_STATUS = N'WAI'
+                                                               WHERE  UID_MARKETPLACE = N'{UID_MARKETPLACE}'
+                                                                ";
+                        DataTable Update_INC = new DataTable();
+                        Update_INC = QueryDT(conBI, INC_Update);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No INC status that have not been updated.");
+                }
+                //จบเช็คเคส INC ที่ยังไม่ Update
             }
             catch
             {
