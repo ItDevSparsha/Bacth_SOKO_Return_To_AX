@@ -72,7 +72,7 @@ namespace Bacth_SOKO_Return_To_AX
                     else
                     {
                         Console.WriteLine("ไม่มีข้อมูล");
-                        Environment.Exit(0);
+                        continue;
                     }
                     //ได้ headder มา
                     dynamic jsonObj = JsonConvert.DeserializeObject<ListofOrderModel.ListofOrder>(await response.Content.ReadAsStringAsync());
@@ -121,7 +121,7 @@ namespace Bacth_SOKO_Return_To_AX
                         else
                         {
                             Console.WriteLine("ไม่มีข้อมูล");
-                            Environment.Exit(0);
+                            continue;
                         }
                         jsonObj = JsonConvert.DeserializeObject<ListofOrderModel.ListofOrder>(await new_response.Content.ReadAsStringAsync());
 
