@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 using System.Globalization;
 using Microsoft.VisualBasic;
 using System.Net;
+using System.Collections.Generic;
 
 namespace Bacth_SOKO_Return_To_AX
 {
@@ -216,6 +217,19 @@ namespace Bacth_SOKO_Return_To_AX
                                         warehouse_code_name = row["CON_VALUE"].ToString();
                                     }
                                 }
+
+                                //เก็บข้อมูลที่เป็น ITEM FREE
+                                String SQL_ItemFree = " SELECT * FROM M_CHANNEL_CONFIG WHERE CON_CODE_1 = N'FREE_ITEM' AND CON_ACTIVE = N'Y' ";
+                                DataTable orderdb_itemfree = new DataTable();
+                                orderdb_itemfree = QueryDT(conBI, SQL_ItemFree);
+                                List<string> itemfree_names = new List<string>();
+                                //string itemfree_name = "";
+                                foreach (DataRow row in orderdb_itemfree.Rows)
+                                {
+                                    itemfree_names.Add(row["CON_VALUE"].ToString());
+                                    //itemfree_name = row["CON_VALUE"].ToString();
+                                }
+
                                 //เก็บ error 
                                 var error = "0";
                                 //String or = order_number_header.Rows[0]["ORDER_NUMBER"].ToString();
@@ -362,9 +376,22 @@ namespace Bacth_SOKO_Return_To_AX
                                         //วนไอเทม
                                         foreach (var item in jsonObj_getorderreturn.detail_item)
                                         {
-                                            if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                            var Check_item_free = item.item_sku.Substring(0, 3); //ดู 3 ตัวแรก
+                                            bool check_itemfree = false; //เอาเช็คว่าเป็นของแถมหรือไม่
+                                            var str_itemfree = ""; //เอาไว้เก็บ 3 ตัวแรก
+                                            foreach (DataRow row in orderdb_itemfree.Rows)
                                             {
-                                                item.item_sku = item.item_sku.Replace("GWP", "");
+                                                if (row["CON_VALUE"].ToString() == Check_item_free)
+                                                {
+                                                    check_itemfree = true; //เป็นของแถม
+                                                    str_itemfree = Check_item_free;
+                                                }
+                                            }
+                                            if (check_itemfree) //เป็นของแถม
+                                            //if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                            {
+                                                item.item_sku = item.item_sku.StartsWith(str_itemfree) ? item.item_sku.Substring(3) : item.item_sku; //ตัด 3 ตัวแรกออก
+                                                //item.item_sku = item.item_sku.Replace("GWP", "");
                                             }
                                             String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
                                             DataTable item_detail = new DataTable();
@@ -591,10 +618,23 @@ namespace Bacth_SOKO_Return_To_AX
                                                 //วนไอเทม
                                                 foreach (var item in jsonObj_getorderreturn.detail_item)
                                                 {
-                                                    if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                                    var Check_item_free = item.item_sku.Substring(0, 3); //ดู 3 ตัวแรก
+                                                    bool check_itemfree = false; //เอาเช็คว่าเป็นของแถมหรือไม่
+                                                    var str_itemfree = ""; //เอาไว้เก็บ 3 ตัวแรก
+                                                    foreach (DataRow rows in orderdb_itemfree.Rows)
                                                     {
-                                                        item.item_sku = item.item_sku.Replace("GWP", "");
+                                                        if (rows["CON_VALUE"].ToString() == Check_item_free)
+                                                        {
+                                                            check_itemfree = true; //เป็นของแถม
+                                                            str_itemfree = Check_item_free;
+                                                        }
                                                     }
+                                                    if (check_itemfree) //เป็นของแถม
+                                                    //if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
+                                                    {
+                                                        item.item_sku = item.item_sku.StartsWith(str_itemfree) ? item.item_sku.Substring(3) : item.item_sku; //ตัด 3 ตัวแรกออก
+                                                        //item.item_sku = item.item_sku.Replace("GWP", "");
+                                                    }                                                  
                                                     String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
                                                     DataTable item_detail = new DataTable();
                                                     item_detail = QueryDT(conBI, SQL_DETAIL);
