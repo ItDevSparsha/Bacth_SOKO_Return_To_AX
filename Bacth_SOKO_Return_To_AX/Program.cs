@@ -130,6 +130,7 @@ namespace Bacth_SOKO_Return_To_AX
                         {
                             if (order.status == "Restocked" && order.type_cancel == "Non-Delivery")
                             {
+                                Console.WriteLine("--------------------------------------");
                                 Console.WriteLine("order_number : " + order.order_number);
                                 Console.WriteLine("return_id : " + order.return_id);
 
@@ -169,6 +170,12 @@ namespace Bacth_SOKO_Return_To_AX
                                 String ORDER_STATUS_In = "RET";
                                 String INTERFACE_STATUS_In = "WAI";
                                 String ORDER_STATUS_Up = "RET";
+                                
+                                if(order_number.Rows.Count == 0) //ไม่มี order_number นี้ใน base แต่ให้ทำงานต่อ
+                                {
+                                    Console.WriteLine("ไม่มี order_number นี้ใน base");
+                                    continue;
+                                }
 
                                 if ((order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "DRA" || order_number.Rows[0]["INTERFACE_STATUS"].ToString() == "WAI")
                                   && (order_number.Rows[0]["ORDER_STATUS"].ToString() == "SHI"|| order_number.Rows[0]["ORDER_STATUS"].ToString() == "CAN"))
