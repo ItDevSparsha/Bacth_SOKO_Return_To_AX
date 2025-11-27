@@ -394,13 +394,18 @@ namespace Bacth_SOKO_Return_To_AX
                                                     str_itemfree = Check_item_free;
                                                 }
                                             }
+
+                                            //เช็คว่าเป็น FREE_ITEM
+                                            var FREE_ITEM = "N";
+
                                             if (check_itemfree) //เป็นของแถม
                                             //if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
                                             {
                                                 item.item_sku = item.item_sku.StartsWith(str_itemfree) ? item.item_sku.Substring(3) : item.item_sku; //ตัด 3 ตัวแรกออก
                                                 //item.item_sku = item.item_sku.Replace("GWP", "");
+                                                FREE_ITEM = "Y";
                                             }
-                                            String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
+                                            String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "' AND FREE_ITEM = N'" + FREE_ITEM  + "'";
                                             DataTable item_detail = new DataTable();
                                             item_detail = QueryDT(conBI, SQL_DETAIL);
 
@@ -430,7 +435,8 @@ namespace Bacth_SOKO_Return_To_AX
                                                 insertSQL.Append("ORIGINAL_NET_AMOUNT, ");
                                                 insertSQL.Append("SELLING_DISCOUNT, ");
                                                 insertSQL.Append("SHOPEE_DISCOUNT, ");
-                                                insertSQL.Append("WEIGHT_PRICE ");
+                                                insertSQL.Append("WEIGHT_PRICE, ");
+                                                insertSQL.Append("FREE_ITEM ");
                                                 insertSQL.Append(") ");
 
                                                 insertSQL.Append("VALUES( ");
@@ -482,12 +488,13 @@ namespace Bacth_SOKO_Return_To_AX
                                                 }
                                                 if (string.IsNullOrEmpty(item_detail.Rows[0]["WEIGHT_PRICE"].ToString()))
                                                 {
-                                                    insertSQL.AppendFormat("NULL ");
+                                                    insertSQL.AppendFormat("NULL, ");
                                                 }
                                                 else
                                                 {
-                                                    insertSQL.AppendFormat("'{0}' ", item_detail.Rows[0]["WEIGHT_PRICE"]);
+                                                    insertSQL.AppendFormat("'{0}', ", item_detail.Rows[0]["WEIGHT_PRICE"]);
                                                 }
+                                                insertSQL.AppendFormat("'{0}' ", item_detail.Rows[0]["FREE_ITEM"]);
                                                 //insertSQL.AppendFormat("'{0}', ", item_detail.Rows[0]["ORIGINAL_NET_AMOUNT"]);
                                                 //insertSQL.AppendFormat("'{0}', ", item_detail.Rows[0]["SELLING_DISCOUNT"]);
                                                 //insertSQL.AppendFormat("'{0}', ", item_detail.Rows[0]["SHOPEE_DISCOUNT"]);
@@ -636,13 +643,18 @@ namespace Bacth_SOKO_Return_To_AX
                                                             str_itemfree = Check_item_free;
                                                         }
                                                     }
+
+                                                    //เช็คว่าเป็น FREE_ITEM
+                                                    var FREE_ITEM = "N";
+
                                                     if (check_itemfree) //เป็นของแถม
                                                     //if (item.item_sku.Substring(0, 3) == "GWP") //ไม่คิดของแถม ปล.ของแถมขึ้นต้นด้วย GWP
                                                     {
                                                         item.item_sku = item.item_sku.StartsWith(str_itemfree) ? item.item_sku.Substring(3) : item.item_sku; //ตัด 3 ตัวแรกออก
                                                         //item.item_sku = item.item_sku.Replace("GWP", "");
+                                                        FREE_ITEM = "Y";
                                                     }                                                  
-                                                    String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "'";
+                                                    String SQL_DETAIL = "SELECT * FROM T_ORDER_MARKETPLACE_DETAIL WHERE UID_ORDER_MARKETPLACE = N'" + order_number_header.Rows[0]["UID"].ToString() + "' AND ITEM_NUMBER = N'" + item.item_sku + "' AND FREE_ITEM = N'" + FREE_ITEM + "'";
                                                     DataTable item_detail = new DataTable();
                                                     item_detail = QueryDT(conBI, SQL_DETAIL);
 
@@ -672,7 +684,8 @@ namespace Bacth_SOKO_Return_To_AX
                                                         insertSQL.Append("ORIGINAL_NET_AMOUNT, ");
                                                         insertSQL.Append("SELLING_DISCOUNT, ");
                                                         insertSQL.Append("SHOPEE_DISCOUNT, ");
-                                                        insertSQL.Append("WEIGHT_PRICE ");
+                                                        insertSQL.Append("WEIGHT_PRICE, ");
+                                                        insertSQL.Append("FREE_ITEM ");
                                                         insertSQL.Append(") ");
 
                                                         insertSQL.Append("VALUES( ");
@@ -724,12 +737,13 @@ namespace Bacth_SOKO_Return_To_AX
                                                         }
                                                         if (string.IsNullOrEmpty(item_detail.Rows[0]["WEIGHT_PRICE"].ToString()))
                                                         {
-                                                            insertSQL.AppendFormat("NULL ");
+                                                            insertSQL.AppendFormat("NULL, ");
                                                         }
                                                         else
                                                         {
-                                                            insertSQL.AppendFormat("'{0}' ", item_detail.Rows[0]["WEIGHT_PRICE"]);
+                                                            insertSQL.AppendFormat("'{0}', ", item_detail.Rows[0]["WEIGHT_PRICE"]);
                                                         }
+                                                        insertSQL.AppendFormat("'{0}' ", item_detail.Rows[0]["FREE_ITEM"]);
                                                         insertSQL.Append(") ");
                                                         //ปิดส่งเบสก่อน
                                                         NonQuery(conBI, insertSQL.ToString());
