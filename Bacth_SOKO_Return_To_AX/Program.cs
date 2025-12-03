@@ -41,12 +41,13 @@ namespace Bacth_SOKO_Return_To_AX
                 //ดึงย้อนหลังตามจำนวนวันที่ fix ไว้
                 var _day = Convert.ToInt32(ConfigurationManager.AppSettings["day"]);
 
-                for (var i = 0; i <= _day; i++)
+                for (var i = 1; i <= _day; i++)
 
                 //เปิดตัวนี้ถ้าเลือกดึงวันเดียว
                 //for (var i = 0; i < 1; i++)
                 {
-                    var fix_day = date.AddDays(1 * (-1));
+                    var fix_day = date.AddDays(i * (-1));
+                    Console.WriteLine("**************************************");
                     Console.WriteLine("Today is " + fix_day.Day.ToString() + '-' + fix_day.Month.ToString() + '-' + fix_day.Year.ToString());
                     var _date = fix_day.Year.ToString() + '-' + fix_day.Month.ToString() + '-' + fix_day.Day.ToString();
                     Console.WriteLine("กำลังทำของวันที่ " + _date);
@@ -78,6 +79,12 @@ namespace Bacth_SOKO_Return_To_AX
                     //ได้ headder มา
                     dynamic jsonObj = JsonConvert.DeserializeObject<ListofOrderModel.ListofOrder>(await response.Content.ReadAsStringAsync());
 
+                    if (jsonObj.list_return == null)
+                    {
+                        Console.WriteLine("ยิงเส้น API ได้ แต่ไม่มีข้อมูล");
+                        Console.WriteLine("--------------------------------------");
+                        continue;
+                    }
                     /*เรื่อง offset*/
                     var api_total = jsonObj.Paging.Total;
                     var max_api_offset = jsonObj.Paging.Total - jsonObj.Paging.Limit; //1-100
@@ -768,6 +775,7 @@ namespace Bacth_SOKO_Return_To_AX
                 }//ปิดวนวัน
 
                 //เช็คเคส INC ที่ยังไม่ Update
+                Console.WriteLine("**************************************");
                 Console.WriteLine("start check INC not yet update");
                 //หา order_number และ return_id
                 String SQL_Check = "SELECT *  FROM T_ORDER_MARKETPLACE WHERE INTERFACE_STATUS = N'COM'   AND UID IN ( " +
